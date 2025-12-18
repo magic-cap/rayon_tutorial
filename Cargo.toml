@@ -1,0 +1,9 @@
+[package]
+name = "rayon_tutorial"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+[dependencies]
+rayon = "1.11.0"
+
