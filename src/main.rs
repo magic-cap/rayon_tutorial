@@ -1,6 +1,7 @@
 use std::io::{Cursor};
 use std::io::{BufReader};
 use rayon_tutorial::*;
+use rayon::prelude::*;
 use getrandom;
 use cipher::StreamCipherSeek;
 fn main() -> Result<(), MagicCapError> {
@@ -16,6 +17,7 @@ fn main() -> Result<(), MagicCapError> {
     // let v:Vec<()> = bri.into_iter().map(|(plaintext_block,bytes_read)| println!("{bytes_read}")).collect();
     let _v:Vec<()> = bri.into_iter()
         .enumerate()
+        // .par_iter()
         .map(|(block_from_zero,(mut plaintext_block,bytes_read))|
              { // closure can use bindings from outer scope
                  let offset = blocksize * (block_from_zero + 1);

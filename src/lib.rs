@@ -4,6 +4,7 @@ use aes::cipher::{KeyIvInit, StreamCipher};
 use ctr;
 use getrandom;
 use thiserror::Error;
+use rayon::prelude::*;
 
 pub fn print_hello_world() {
     let _ = io::stdout().write_all(b"Hello, world!\n");
@@ -51,6 +52,17 @@ where
         }
     }
 }
+impl<R> ParallelIterator for BufReaderIterator<R>
+where R: Read + Send,
+{
+    type Item = (Vec<u8>, usize);
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item> {
+        todo!()
+    }
+}
 
 // key pieces
 
@@ -69,7 +81,7 @@ pub fn make_key() -> Result<(TahoeAesCtr, [u8; 16]), MagicCapError> {
     Ok((key, key_bytes))
 }
 
-// error struct
+                                                                                                                                                                                                                                                                                                                                            // error struct
 #[derive(Error,Debug)]
 pub enum MagicCapError {
     #[error("merkle root invalid, file integrity could not be verified.")]
