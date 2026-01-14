@@ -186,6 +186,8 @@
             cargo-watch
             rustToolchain
             alejandra
+
+            #random
           ];
         };
 

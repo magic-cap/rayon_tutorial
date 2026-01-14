@@ -1,6 +1,7 @@
 # rayon seems to be the popular way to do multicore in rust?
 - [X] import rayon
-- [ ] try a demo
+- [X] try a demo
   https://www.shuttle.dev/blog/2024/04/11/using-rayon-rust
   the link above has a CSV demo, paste it in and see if it works?
-- [ ] I'm using a data file from https://data.boston.gov/dataset/311-service-requests
+- [X] I'm using a data file from https://data.boston.gov/dataset/311-service-requests
+  I had to dig around to find a file with 313227 lines, even then the ~par_iter~ call took less than a second.
