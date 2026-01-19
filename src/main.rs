@@ -1,10 +1,14 @@
 use std::io::{Cursor};
-use std::io::{BufReader};
+use std::io::{BufReader,SeekFrom};
+use std::io::prelude::*;
+use std::fs::{File};
 use rayon_tutorial::*;
 use rayon::prelude::*;
 use getrandom;
 use cipher::StreamCipherSeek;
 fn main() -> Result<(), MagicCapError> {
+    // write_out_of_order()?;
+    // Ok(())
     print_hello_world();
     let blocksize = 1024;
     let mut crud:Vec<u8> = vec![0u8; 5000];
@@ -22,11 +26,21 @@ fn main() -> Result<(), MagicCapError> {
              { // closure can use bindings from outer scope
                  let offset = blocksize * (block_from_zero + 1);
                  let mut key = key_from_bytes(key_bytes);
-                 key.try_seek(offset).expect("this only fails if we encrypt truly massive files, what have you done?"); // unwrap is 😨
+                 key.try_seek(offset).expect("this only fails if we encrypt truly massive files, what have you done?");
                  encryptor(&mut key,&mut plaintext_block);
                  println!("{bytes_read} {block_from_zero} real actual block number is {}",block_from_zero+1)
              }
         ).collect();
+    Ok(())
+
+}
+
+fn write_out_of_order() -> Result<(),MagicCapError> {
+    let mut f = File::create_new("foo")?;
+    f.seek(SeekFrom::Start(512))?;
+    f.write(b"22222222")?;
+    f.seek(SeekFrom::Start(0))?;
+    f.write(b"1111")?;
     Ok(())
 
 }

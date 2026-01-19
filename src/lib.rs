@@ -1,5 +1,4 @@
-use std::io;
-use std::io::{BufReader, Read, Write};
+use std::io::{BufReader, Read, Write,stdout};
 use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherSeek, StreamCipherError};
 use ctr;
 use getrandom;
@@ -7,7 +6,7 @@ use thiserror::Error;
 // use rayon::prelude::*;
 
 pub fn print_hello_world() {
-    let _ = io::stdout().write_all(b"Hello, world!\n");
+    let _ = stdout().write_all(b"Hello, world!\n");
 }
 
 /// BufReader Iterator, Read r => r -> BlockSize Int -> (PlainText ByteString, Size Int)
@@ -55,6 +54,7 @@ where
 
 
 /*
+// don't know how to do this part
 impl<R> ParallelIterator for BufReaderIterator<R>
 where R: Read + Send,
 {
@@ -67,6 +67,7 @@ where R: Read + Send,
     }
 }
 */
+
 // key pieces
 
 type TahoeAesCtr = ctr::Ctr128BE<aes::Aes128>;
@@ -118,7 +119,7 @@ pub enum MagicCapError {
     #[error("Metadata hash does not match expected, do you have the wrong encrypted file?")]
     MerkleRootDoesNotMatch,
     #[error("Cipher seek failed")]
-    StreamCipherError(#[from] cipher::StreamCipherError) // XXX exactly what trait bounds are missing for #[source] and #[from] ?
+    StreamCipherError(#[from] StreamCipherError) // XXX exactly what trait bounds are missing for #[source] and #[from] ?
 
     // do we only get one single wrapper per concrete type? yes, unless wrapping in another enum!
     // or if you don't use source / from, which both call ~into~
