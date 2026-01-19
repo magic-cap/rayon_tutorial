@@ -19,7 +19,7 @@ fn main() -> Result<(), MagicCapError> {
     let key_bytes = new_key_bytes().unwrap();
     // this compiles and runs!
     // let v:Vec<()> = bri.into_iter().map(|(plaintext_block,bytes_read)| println!("{bytes_read}")).collect();
-    let _v:Vec<()> = bri.into_iter()
+    let mut index_hash:Vec<(usize,[u8;32])> = bri.into_iter()
         .enumerate()
         .par_bridge()
         .map(|(block_from_zero,(mut plaintext_block,bytes_read))|
@@ -28,9 +28,16 @@ fn main() -> Result<(), MagicCapError> {
                  let mut key = key_from_bytes(key_bytes);
                  key.try_seek(offset).expect("this only fails if we encrypt truly massive files, what have you done?");
                  encryptor(&mut key,&mut plaintext_block);
-                 println!("{bytes_read} {block_from_zero} real actual block number is {}",block_from_zero+1)
+                 let crypt_block = plaintext_block; // it's been encrypted in-place
+                 println!("{bytes_read} {block_from_zero} real actual block number is {}",block_from_zero+1);
+                 // XXX doesn't write yet! will that work in parallel!?
+                 return (block_from_zero + 1,hash_leaf(&crypt_block));
              }
         ).collect();
+    index_hash.sort(); // get 'em back in order
+    for (block,hash) in index_hash {
+        println!("block number {block} has hash {hash:?}");
+    }
     Ok(())
 
 }
