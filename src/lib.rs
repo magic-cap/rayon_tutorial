@@ -1,7 +1,9 @@
-use std::io::{BufReader, Read, Write,stdout};
 use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherSeek, StreamCipherError};
 use ctr;
 use getrandom;
+use bitcoin_hashes::{HashEngine, sha256d};
+use rs_merkle::{Hasher, MerkleTree};
+use std::io::{BufReader, Read, Write,stdout};
 use thiserror::Error;
 // use rayon::prelude::*;
 
@@ -101,6 +103,69 @@ pub fn key_from_bytes_with_offset(key_bytes: [u8; 16],offset: usize) -> Result<T
     key.try_seek(offset)?;
     Ok(key)
 
+}
+
+// merkle tree things
+pub fn hash_leaf(leaf: &Vec<u8>) -> [u8; 32] {
+    TahoeLeaf::hash(leaf.as_slice())
+}
+
+// from binrw-tahoe experiments -- mirroring the Tahoe way of
+// using tagged hashes for merkel nodes, with different tags for
+// leaves vs. interior vs. empty nodes.
+#[derive(Clone)]
+pub struct TahoeLeaf {}
+
+impl Hasher for TahoeLeaf {
+    type Hash = [u8; 32];
+
+    fn hash(data: &[u8]) -> [u8; 32] {
+        //why not "Hash" as return type?
+        //let mut engine = sha256d::Hash::engine();
+        //engine.input(data);
+        //sha256d::Hash::from_engine(engine).to_byte_array()
+        let hashed = hash_things(data, b"allmydata_crypttext_segment_v1");
+        // let hash = tagged_hash::<32>(, data);
+        let mut ret = [0; 32];
+        ret.copy_from_slice(hashed.as_slice());
+        ret
+    }
+}
+
+fn hash_things(data: &[u8],tag: &[u8]) -> [u8; 32] {
+    let hash = tagged_hash::<32>(tag, data);
+    let mut ret = [0; 32];
+    ret.copy_from_slice(hash.as_slice());
+    ret
+}
+
+// todo: Chris' code had "truncate_to" as an arg ... and then we
+// wnated to do that as const-generics ... but "sha256d" _is_ just
+// always 32 bytes so what does the truncate_to even do?
+// tagged_hash<16>
+pub fn tagged_hash<const TAGSIZE: usize>(tag: &[u8], val: &[u8]) -> [u8; TAGSIZE] {
+    if TAGSIZE > 32 {
+        panic!("illegal tag size");
+    }
+    let mut engine = sha256d::Hash::engine();
+    engine.input(&netstring(tag));
+    engine.input(val);
+    let raw = *sha256d::Hash::from_engine(engine).as_byte_array();
+    let mut rtn: [u8; TAGSIZE] = [0u8; TAGSIZE];
+    rtn.copy_from_slice(&raw[0..TAGSIZE]);
+    return rtn;
+}
+
+// pulled from "lafs"
+pub fn netstring(s: &[u8]) -> Vec<u8> {
+    //format!("{}:{},", s.len(), std::str::from_utf8(s).unwrap()).into_bytes()
+
+    // what Python does is output BYTES here, where we have some
+    // number of ASCII-numeral bytes that represent the length, then a
+    // ':' byte, and then 32 arbitrary bytes of key
+    let tag = format!("{}:", s.len());
+    // stuff two byte-sequences together; better way?
+    [tag.as_bytes(), s, b","].concat()
 }
 
 // error struct
