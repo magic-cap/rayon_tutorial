@@ -1,8 +1,8 @@
 use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherError, StreamCipherSeek};
 use bitcoin_hashes::{sha256d, HashEngine};
 use ctr;
-use getrandom;
-use rs_merkle::{Hasher, MerkleTree};
+// use getrandom;
+use rs_merkle::{Hasher}; // , MerkleTree};
 use std::io::{stdout, BufReader, Read, Write};
 use thiserror::Error;
 // use rayon::prelude::*;
