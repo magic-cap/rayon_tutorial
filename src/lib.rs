@@ -1,9 +1,9 @@
-use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherSeek, StreamCipherError};
+use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherError, StreamCipherSeek};
+use bitcoin_hashes::{sha256d, HashEngine};
 use ctr;
 use getrandom;
-use bitcoin_hashes::{HashEngine, sha256d};
 use rs_merkle::{Hasher, MerkleTree};
-use std::io::{BufReader, Read, Write,stdout};
+use std::io::{stdout, BufReader, Read, Write};
 use thiserror::Error;
 // use rayon::prelude::*;
 
@@ -54,7 +54,6 @@ where
     }
 }
 
-
 /*
 // don't know how to do this part
 impl<R> ParallelIterator for BufReaderIterator<R>
@@ -86,7 +85,7 @@ pub fn new_key() -> Result<(TahoeAesCtr, [u8; 16]), MagicCapError> {
     Ok((key, key_bytes))
 }
 
-pub fn new_key_bytes() -> Result<[u8;16], MagicCapError> {
+pub fn new_key_bytes() -> Result<[u8; 16], MagicCapError> {
     let mut key_bytes = [0u8; 16];
     let _ = getrandom::fill(&mut key_bytes)?;
     Ok(key_bytes)
@@ -97,12 +96,14 @@ pub fn key_from_bytes(key_bytes: [u8; 16]) -> TahoeAesCtr {
     TahoeAesCtr::new(&key_bytes.into(), &iv.into())
 }
 
-pub fn key_from_bytes_with_offset(key_bytes: [u8; 16],offset: usize) -> Result<TahoeAesCtr,MagicCapError> {
+pub fn key_from_bytes_with_offset(
+    key_bytes: [u8; 16],
+    offset: usize,
+) -> Result<TahoeAesCtr, MagicCapError> {
     let iv = [0u8; 16];
     let mut key = TahoeAesCtr::new(&key_bytes.into(), &iv.into());
     key.try_seek(offset)?;
     Ok(key)
-
 }
 
 // merkle tree things
@@ -132,7 +133,7 @@ impl Hasher for TahoeLeaf {
     }
 }
 
-fn hash_things(data: &[u8],tag: &[u8]) -> [u8; 32] {
+fn hash_things(data: &[u8], tag: &[u8]) -> [u8; 32] {
     let hash = tagged_hash::<32>(tag, data);
     let mut ret = [0; 32];
     ret.copy_from_slice(hash.as_slice());
@@ -169,35 +170,47 @@ pub fn netstring(s: &[u8]) -> Vec<u8> {
 }
 
 // error struct
-#[derive(Error,Debug)]
+#[derive(Error, Debug)]
 pub enum MagicCapError {
     #[error("merkle root invalid, file integrity could not be verified.")]
     MerkleRootInvalid(#[source] rs_merkle::Error),
     #[error("Failed to base32 decode Key hash.")]
-    HashInvalid(#[source] #[from] data_encoding::DecodeError),
+    HashInvalid(
+        #[source]
+        #[from]
+        data_encoding::DecodeError,
+    ),
     #[error("Random failed, good luck")]
-    RandomError(#[source] #[from] getrandom::Error),
+    RandomError(
+        #[source]
+        #[from]
+        getrandom::Error,
+    ),
     #[error("File open/read/write/close failed")]
-    FileError(#[source] #[from] std::io::Error),
+    FileError(
+        #[source]
+        #[from]
+        std::io::Error,
+    ),
     // #[error("CapnProto error, failed to read or write metadata")]
     // CapnProtoError(#[source] #[from] capnp::Error),
     #[error("Metadata hash does not match expected, do you have the wrong encrypted file?")]
     MerkleRootDoesNotMatch,
     #[error("Cipher seek failed")]
-    StreamCipherError(#[from] StreamCipherError) // XXX exactly what trait bounds are missing for #[source] and #[from] ?
+    StreamCipherError(#[from] StreamCipherError), // XXX exactly what trait bounds are missing for #[source] and #[from] ?
 
-    // do we only get one single wrapper per concrete type? yes, unless wrapping in another enum!
-    // or if you don't use source / from, which both call ~into~
-    // #[error("Failed to base32 decode hash.")]
-    // MetaHashInvalid(#[from] data_encoding::DecodeError),
+                                                  // do we only get one single wrapper per concrete type? yes, unless wrapping in another enum!
+                                                  // or if you don't use source / from, which both call ~into~
+                                                  // #[error("Failed to base32 decode hash.")]
+                                                  // MetaHashInvalid(#[from] data_encoding::DecodeError),
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Cursor};
     use proptest::prelude::*;
-    proptest!{
+    use std::io::Cursor;
+    proptest! {
         #![proptest_config(ProptestConfig {
             cases: 5 as u32, .. ProptestConfig::default()
         })]
